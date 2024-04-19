@@ -2,13 +2,13 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCf3EedT3ircIZhrLikuEKnEYsTyFoqJzQ",
-  authDomain: "carbon-linebot.firebaseapp.com",
-  projectId: "carbon-linebot",
-  storageBucket: "carbon-linebot.appspot.com",
-  messagingSenderId: "728913584048",
-  appId: "1:728913584048:web:a7d35f31ef6ba1c4b60075",
-  measurementId: "G-1RZ6T10P7X"
+  apiKey: "AIzaSyAIwgMix9qYE1fTZXGRSxk6xaqB3R4vV0A",
+  authDomain: "carbon-sms.firebaseapp.com",
+  projectId: "carbon-sms",
+  storageBucket: "carbon-sms.appspot.com",
+  messagingSenderId: "629532014082",
+  appId: "1:629532014082:web:cd6314dbb29b36d174591b",
+  measurementId: "G-0Q91CN1DTC"
 };
 
 const app = initializeApp(firebaseConfig);

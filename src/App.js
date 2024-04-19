@@ -19,12 +19,6 @@ const App = () => {
     }, auth);
   }
 
-  const handleSubmitOtp = () => {
-    // Assuming `verifyOtp` can be called directly with the OTP
-    // If it's necessary to pass an event, you may need to adjust the function definition
-    verifyOtp(otp);
-  }
-
   const handleSend = (event) => {
     event.preventDefault();
     setHasFilled(true);
@@ -48,33 +42,39 @@ const App = () => {
     if (otpInput.length === 6) {
       // verify otp
       let confirmationResult = window.confirmationResult;
-      // After OTP is confirmed and you get the user object
       confirmationResult.confirm(otpInput).then((result) => {
         // User signed in successfully.
+        // Get the verification token
         const user = result.user;
-        
-        // Here we assume you have access to user.phoneNumber after verification.
-        // Now, send both phoneNumber and token to your backend
-        fetch('http://localhost:5000/verify_and_store', {
+        console.log(user.phoneNumber); // This should log the user's phone number if available
+
+        const verificationToken = result.user.accessToken;
+  
+        // TODO: Send the verificationToken to your backend
+        fetch('http://127.0.0.1:5000/verify_and_get_phone', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            phoneNumber: user.phoneNumber, // the verified phone number
-            token: user.za // the token from the user object, property name might differ
+            phoneNumber: phone,
+            token: verificationToken
           })
         })
         .then(response => response.json())
         .then(data => {
-          // Handle response from your backend
-          console.log(data);
-          alert('Phone number and token sent successfully.');
+          console.log('Token verified by backend:', data);
+          alert('User signed in successfully');
         })
         .catch((error) => {
-          // Handle any errors
-          console.error('Error:', error);
+          console.error('Error verifying token:', error);
+          alert('Error during token verification');
         });
+  
+      }).catch((error) => {
+        // User couldn't sign in (bad verification code?)
+        console.error('User couldn\'t sign in (bad verification code?):', error);
+        alert('User couldn\'t sign in (bad verification code?)');
       });
     }
   }
@@ -100,26 +100,7 @@ const App = () => {
         <Card sx={{ width: '300px'}}>
           <CardContent sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
             <Typography sx={{ padding: '20px'}} variant='h5' component='div'>Enter the OTP</Typography>
-            <TextField 
-              sx={{ width: '240px', marginBottom: '20px'}} 
-              variant='outlined' 
-              label='OTP' 
-              value={otp} 
-              onChange={(event) => setOtp(event.target.value)} 
-              onKeyPress={(event) => {
-                if (event.key === 'Enter') {
-                  handleSubmitOtp();
-                }
-              }} // This allows the user to also press Enter to submit the OTP
-              inputProps={{ maxLength: 6 }} // Assuming OTP is 6 digits
-            />
-            <Button 
-              onClick={handleSubmitOtp} 
-              variant='contained' 
-              sx={{ width: '240px'}}
-            >
-              Verify OTP
-            </Button>
+              <TextField sx={{ width: '240px'}} variant='outlined' label='OTP ' value={otp} onChange={verifyOtp} />
           </CardContent>
         </Card>
         <div id="recaptcha"></div>
