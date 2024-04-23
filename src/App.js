@@ -1,20 +1,31 @@
-import { Button, Card, CardContent, TextField, Typography } from '@mui/material';
-import React, { useState } from 'react'
+import { Button, Card, CardContent, TextField, Typography, Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
 import { auth } from './firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 
 const App = () => {
-
-  const [phone, setPhone] = useState('+91');
+  const [phone, setPhone] = useState('');
   const [hasFilled, setHasFilled] = useState(false);
   const [otp, setOtp] = useState('');
+  const [timer, setTimer] = useState(180); // 180 seconds for 3 minutes
+
+  useEffect(() => {
+    let interval = null;
+    if (hasFilled && timer > 0) {
+      interval = setInterval(() => {
+        setTimer(timer - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [hasFilled, timer]);
 
   const generateRecaptcha = () => {
     window.recaptchaVerifier = new RecaptchaVerifier('recaptcha', {
       'size': 'invisible',
       'callback': (response) => {
         // reCAPTCHA solved, allow signInWithPhoneNumber.
-        // ...
       }
     }, auth);
   }
@@ -22,42 +33,38 @@ const App = () => {
   const handleSend = (event) => {
     event.preventDefault();
     setHasFilled(true);
+    setTimer(180); // reset timer
     generateRecaptcha();
+    const fullPhoneNumber = `+886${phone.startsWith('0') ? phone.slice(1) : phone}`;
     let appVerifier = window.recaptchaVerifier;
-    signInWithPhoneNumber(auth, phone, appVerifier)
+    signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier)
       .then((confirmationResult) => {
-        // SMS sent. Prompt user to type the code from the message, then sign the
-        // user in with confirmationResult.confirm(code).
         window.confirmationResult = confirmationResult;
       }).catch((error) => {
-        // Error; SMS not sent
         console.log(error);
       });
   }
-  
+
   const verifyOtp = (event) => {
     let otpInput = event.target.value;
     setOtp(otpInput);
-  
+
     if (otpInput.length === 6) {
-      // verify otp
       let confirmationResult = window.confirmationResult;
       confirmationResult.confirm(otpInput).then((result) => {
-        // User signed in successfully.
-        // Get the verification token
         const user = result.user;
-        console.log(user.phoneNumber); // This should log the user's phone number if available
+        console.log(user.phoneNumber);
 
         const verificationToken = result.user.accessToken;
-  
-        // TODO: Send the verificationToken to your backend
+
+        const fullPhoneNumber = `+886${phone.startsWith('0') ? phone.slice(1) : phone}`;
         fetch('http://127.0.0.1:5000/verify_and_get_phone', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            phoneNumber: phone,
+            phoneNumber: fullPhoneNumber,
             token: verificationToken
           })
         })
@@ -70,43 +77,49 @@ const App = () => {
           console.error('Error verifying token:', error);
           alert('Error during token verification');
         });
-  
+
       }).catch((error) => {
-        // User couldn't sign in (bad verification code?)
         console.error('User couldn\'t sign in (bad verification code?):', error);
         alert('User couldn\'t sign in (bad verification code?)');
       });
     }
   }
 
-  if(!hasFilled){
-    return (
-      <div className='app__container'>
-        <Card sx={{ width: '300px'}}>
-          <CardContent sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
-            <Typography sx={{ padding: '20px'}} variant='h5' component='div'>Enter your phone number</Typography>
+  return (
+    <div className='app__container'>
+      <Card sx={{ width: '300px'}}>
+        <CardContent sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
+          <Typography sx={{ padding: '20px'}} variant='h5' component='div'>{!hasFilled ? '請輸入手機號碼' : 'Enter the OTP'}</Typography>
+          {!hasFilled ? (
             <form onSubmit={handleSend}>
-              <TextField sx={{ width: '240px'}} variant='outlined' autoComplete='off' label='Phone Number' value={phone} onChange={(event) => setPhone(event.target.value)} />
-              <Button type='submit' variant='contained' sx={{ width: '240px', marginTop: '20px'}}>Send Code</Button>
+              <Box sx={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <TextField
+                  sx={{ width: '80px' }}
+                  variant='outlined'
+                  value='+886'
+                />
+                <TextField
+                  sx={{ width: '160px' }}
+                  variant='outlined'
+                  autoComplete='off'
+                  label='Phone Number'
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)} // Automatically remove the first zero
+                />
+              </Box>
+              <Button type='submit' variant='contained' sx={{ width: '240px', marginTop: '20px'}}>發送驗證碼</Button>
             </form>
-          </CardContent>
-        </Card>
-        <div id="recaptcha"></div>
-      </div>
-    ) 
-  } else {
-    return (
-      <div className='app__container'>
-        <Card sx={{ width: '300px'}}>
-          <CardContent sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
-            <Typography sx={{ padding: '20px'}} variant='h5' component='div'>Enter the OTP</Typography>
-              <TextField sx={{ width: '240px'}} variant='outlined' label='OTP ' value={otp} onChange={verifyOtp} />
-          </CardContent>
-        </Card>
-        <div id="recaptcha"></div>
-      </div>
-    )
-  }
+          ) : (
+            <TextField sx={{ width: '240px'}} variant='outlined' label='OTP ' value={otp} onChange={verifyOtp} />
+          )}
+          {hasFilled && <Typography sx={{ marginTop: '20px' }}>
+            {timer > 0 ? `Resend in ${Math.floor(timer / 60)}:${timer % 60 < 10 ? '0' : ''}${timer % 60}` : <Button onClick={handleSend} variant="contained">重新發送驗證碼</Button>}
+          </Typography>}
+        </CardContent>
+      </Card>
+      <div id="recaptcha"></div>
+    </div>
+  );
 }
 
 export default App;
