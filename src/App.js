@@ -21,6 +21,16 @@ const App = () => {
     return () => clearInterval(interval);
   }, [hasFilled, timer]);
 
+  useEffect(() => {
+    generateRecaptcha();  // 初始化 reCAPTCHA
+  
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();  // 组件卸载时清除 reCAPTCHA 实例
+      }
+    };
+  }, []);  // 空依赖数组确保仅在组件挂载和卸载时执行
+
   const generateRecaptcha = () => {
     window.recaptchaVerifier = new RecaptchaVerifier('recaptcha', {
       'size': 'invisible',
@@ -32,11 +42,25 @@ const App = () => {
 
   const handleSend = (event) => {
     event.preventDefault();
+
+    if (!window.recaptchaVerifier) {
+      console.error("reCAPTCHA has not been initialized.");
+      return;  // 如果 reCAPTCHA 验证器未初始化，则不执行登录操作
+    }
+    //generateRecaptcha();
+
     setHasFilled(true);
     setTimer(180); // reset timer
-    generateRecaptcha();
+    
     const fullPhoneNumber = `+886${phone.startsWith('0') ? phone.slice(1) : phone}`;
     let appVerifier = window.recaptchaVerifier;
+
+    // window.recaptchaVerifier.verify().then(() => {
+    //   // 此处进行电话号码发送逻辑
+    // }).catch((error) => {
+    //   console.error("reCAPTCHA verification failed:", error);
+    // });
+
     signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier)
       .then((confirmationResult) => {
         window.confirmationResult = confirmationResult;
@@ -65,6 +89,7 @@ const App = () => {
           },
           body: JSON.stringify({
             phoneNumber: fullPhoneNumber,
+            line_user_id:
             token: verificationToken
           })
         })
@@ -89,7 +114,7 @@ const App = () => {
     <div className='app__container'>
       <Card sx={{ width: '300px'}}>
         <CardContent sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
-          <Typography sx={{ padding: '20px'}} variant='h5' component='div'>{!hasFilled ? '請輸入手機號碼' : 'Enter the OTP'}</Typography>
+          <Typography sx={{ padding: '20px'}} variant='h5' component='div'>{!hasFilled ? '請輸入手機號碼' : '請輸入驗證碼'}</Typography>
           {!hasFilled ? (
             <form onSubmit={handleSend}>
               <Box sx={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -113,7 +138,7 @@ const App = () => {
             <TextField sx={{ width: '240px'}} variant='outlined' label='OTP ' value={otp} onChange={verifyOtp} />
           )}
           {hasFilled && <Typography sx={{ marginTop: '20px' }}>
-            {timer > 0 ? `Resend in ${Math.floor(timer / 60)}:${timer % 60 < 10 ? '0' : ''}${timer % 60}` : <Button onClick={handleSend} variant="contained">重新發送驗證碼</Button>}
+            {timer > 0 ? `${Math.floor(timer / 60)}:${timer % 60 < 10 ? '0' : ''}${timer % 60} 後重新傳送` : <Button onClick={handleSend} variant="contained">重新發送驗證碼</Button>}
           </Typography>}
         </CardContent>
       </Card>
