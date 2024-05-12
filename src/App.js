@@ -1,9 +1,34 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Button, Card, CardContent, TextField, Typography, Box } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { auth } from './firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 
 const App = () => {
+  return (
+    <Router>
+      <div className='app__container'>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/:line_user_id" element={<UserPage />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
+const Home = () => {
+  // Home page content, can be modified or enhanced as needed.
+  return (
+    <Card sx={{ width: '300px' }}>
+      <CardContent>
+        <Typography variant="h5">Welcome to the application!</Typography>
+      </CardContent>
+    </Card>
+  );
+};
+
+const UserPage = () => {
   const [phone, setPhone] = useState('');
   const [hasFilled, setHasFilled] = useState(false);
   const [otp, setOtp] = useState('');
@@ -82,7 +107,7 @@ const App = () => {
         const verificationToken = result.user.accessToken;
 
         const fullPhoneNumber = `+886${phone.startsWith('0') ? phone.slice(1) : phone}`;
-        fetch('http://127.0.0.1:5000/verify_and_get_phone', {
+        fetch('http://192.168.137.1:5000/verify_and_get_phone', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
