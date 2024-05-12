@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import { Button, Card, CardContent, TextField, Typography, Box } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { auth } from './firebase';
@@ -8,17 +8,16 @@ const App = () => {
   return (
     <Router>
       <div className='app__container'>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/:line_user_id" element={<UserPage />} />
-        </Routes>
+        <Switch>
+          <Route exact path="/" component={Home} />
+          <Route path="/:line_user_id" component={UserPage} />
+        </Switch>
       </div>
     </Router>
   );
 }
 
 const Home = () => {
-  // Home page content, can be modified or enhanced as needed.
   return (
     <Card sx={{ width: '300px' }}>
       <CardContent>
@@ -113,12 +112,14 @@ const UserPage = () => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
+            line_user_id: window.location.pathname.slice(1),
             phoneNumber: fullPhoneNumber,
             token: verificationToken
           })
         })
         .then(response => response.json())
         .then(data => {
+          console.log('line_user_id:', window.location.pathname.slice(1));
           console.log('Token verified by backend:', data);
           alert('User signed in successfully');
         })
