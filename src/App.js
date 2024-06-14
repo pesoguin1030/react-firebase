@@ -114,24 +114,29 @@ const UserPage = () => {
           body: JSON.stringify({
             line_user_id: window.location.pathname.slice(1),
             phoneNumber: fullPhoneNumber,
-            line_user_id:
+            // line_user_id:
             token: verificationToken
           })
         })
         .then(response => response.json())
         .then(data => {
-          console.log('line_user_id:', window.location.pathname.slice(1));
-          console.log('Token verified by backend:', data);
-          alert('User signed in successfully');
+          if (data.error) {
+            console.error('Error from backend:', data.error);
+            alert('查無該手機號碼，請先至碳權平台綁定手機號碼');
+          } else {
+            console.log('line_user_id:', window.location.pathname.slice(1));
+            console.log('Token verified by backend:', data);
+            alert('您已於碳權平台官方帳號成功綁定手機號碼');
+          }
         })
         .catch((error) => {
           console.error('Error verifying token:', error);
-          alert('Error during token verification');
+          alert('驗證碼錯誤，請稍後重新傳送驗證碼');
         });
 
       }).catch((error) => {
         console.error('User couldn\'t sign in (bad verification code?):', error);
-        alert('User couldn\'t sign in (bad verification code?)');
+        alert('不明錯誤，請稍後重新傳送驗證碼');
       });
     }
   }
